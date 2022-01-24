@@ -1,6 +1,8 @@
 package com.example.encuentro2.services;
 
+import com.example.encuentro2.handle.RecursoNoExistente;
 import com.example.encuentro2.model.Restaurante;
+import com.example.encuentro2.utils.RestauranteRepository;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,11 +11,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.text.SimpleDateFormat;
 import java.util.Map;
+
+import static org.springframework.data.mongodb.core.query.Criteria.where;
 
 
 @Service
@@ -22,6 +27,8 @@ public class RestauranteService {
     @Autowired
     private MongoTemplate mongoTemplate;
     private final ObjectMapper mapper;
+    @Autowired
+    private RestauranteRepository restauranteRepository;
 
     private static final Logger logger = LoggerFactory.getLogger(RestauranteService.class);
 
@@ -31,37 +38,33 @@ public class RestauranteService {
         mapper.setDateFormat(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss"));
     }
 
-    private void mappearAString(Restaurante restaurante) throws JsonProcessingException {
+    private String mappearAString(Restaurante restaurante) throws JsonProcessingException {
         String restauranteString = mapper.writeValueAsString(restaurante);
         logger.info("Restaurante mapeado a string: \n" + restauranteString);
+        return restauranteString;
     }
 
-    private Map<String, Restaurante> mappearAMap(Restaurante restaurante) throws JsonProcessingException {
-        String restauranteString = mapper.writeValueAsString(restaurante);
+    private Map<String, Restaurante> mappearAMap(String restauranteString) throws JsonProcessingException {
         Map<String, Restaurante> restauranteMap = mapper.readValue(restauranteString, Map.class);
         logger.info("Restaurante mapeado a map: \n" + restauranteMap);
         return restauranteMap;
     }
 
-    private Map<String, Restaurante> mappearDeStringAMap(String restaurante) throws JsonProcessingException {
-        Map<String, Restaurante> restauranteMap = mapper.readValue(restaurante, Map.class);
-        logger.info("Restaurante mapeado a map: \n" + restauranteMap);
-        return restauranteMap;
-    }
-
-    private void mappearAClase(Restaurante restaurante) throws JsonProcessingException {
-        String restauranteString = mapper.writeValueAsString(restaurante);
+    private Restaurante mappearAClase(String restauranteString) throws JsonProcessingException {
         var restauranteClase = mapper.readValue(restauranteString, Restaurante.class);
         logger.info("Restaurante mapeado a clase: \n" + restauranteClase);
+        return restauranteClase;
     }
 
     public Restaurante crearRestaurante(Restaurante restaurante){
         logger.info("Guardando");
         try {
-            mappearAString(restaurante);
-            mappearAClase(restaurante);
-            mappearAMap(restaurante);
-            return mongoTemplate.save(restaurante, "restaurantes");
+            String restauranteString = mappearAString(restaurante);
+            mappearAClase(restauranteString);
+            mappearAMap(restauranteString);
+            Restaurante restauranteNuevo =  mongoTemplate.save(restaurante, "restaurantes");
+            restauranteRepository.save(mappearAString(restauranteNuevo), restauranteNuevo.getId());
+            return restauranteNuevo;
         } catch (JsonProcessingException e) {
             logger.error("Error convirtiendo a string", e);
         }
@@ -69,7 +72,47 @@ public class RestauranteService {
     }
 
     public Map<String, Restaurante> restauranteAMap(String restaurante) throws JsonProcessingException {
-        return mappearDeStringAMap(restaurante);
+        return mappearAMap(restaurante);
+    }
+
+   public  Restaurante getRestauranteById(String id) throws JsonProcessingException, RecursoNoExistente {
+        try {
+            logger.info("Con redis");
+            return mappearAClase(restauranteRepository.findById(id));
+        }catch (IllegalArgumentException e){
+            Restaurante restaurante = mongoTemplate.findById(id, Restaurante.class);
+            try{
+                logger.info("Con mongo");
+                restauranteRepository.save(mappearAString(restaurante), restaurante.getId());
+                return restaurante;
+            }catch(NullPointerException e2){
+                throw new RecursoNoExistente("No se ha encontrado un restaurante con ese id");
+            }
+        }
+   }
+
+    public  Restaurante updateRestaurante(Restaurante restaurante) throws JsonProcessingException, RecursoNoExistente {
+        logger.info("Actualizando");
+        try {
+            String restauranteString = mappearAString(restaurante);
+            logger.info(restauranteString);
+            Restaurante restauranteActualizado = mongoTemplate.save(restaurante);
+            restauranteRepository.save(mappearAString(restauranteActualizado), restauranteActualizado.getId());
+            return restauranteActualizado;
+        } catch (JsonProcessingException e) {
+            logger.error("Error convirtiendo a string", e);
+        }
+        return restaurante;
+    }
+
+    public void deleteByName(String nombre) throws RecursoNoExistente {
+        try {
+            Restaurante restaurante = mongoTemplate.findOne((new Query(where("nombre").is(nombre))), Restaurante.class);
+            mongoTemplate.findAndRemove((new Query(where("nombre").is(restaurante.getNombre()))), Restaurante.class);
+            restauranteRepository.delete(restaurante.getId());
+        }catch(NullPointerException n){
+            throw new RecursoNoExistente("No se ha encontrado un restaurante con ese nombre");
+        }
     }
 
 }

@@ -23,6 +23,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-aop'
 	implementation("com.fasterxml.jackson.core:jackson-core:2.13.0")
 	implementation("com.fasterxml.jackson.core:jackson-databind:2.13.0")
+	implementation("org.springframework.boot:spring-boot-starter-data-redis")
+	implementation("redis.clients:jedis")
 	implementation group: 'javax.persistence', name: 'javax.persistence-api', version: '2.2'
 	compileOnly 'org.projectlombok:lombok:1.18.22'
 	annotationProcessor 'org.projectlombok:lombok:1.18.22'
