@@ -32,6 +32,11 @@ dependencies {
 	runtimeOnly("mysql:mysql-connector-java")
 }
 
+bootJar {
+	archivesBaseName = 'api-proyecto-final'
+	archiveVersion = '0.1.0'
+}
+
 test {
 	useJUnitPlatform()
 }

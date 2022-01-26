@@ -2,7 +2,8 @@ package com.example.encuentro2.services;
 
 import com.example.encuentro2.handle.RecursoNoExistente;
 import com.example.encuentro2.model.Restaurante;
-import com.example.encuentro2.utils.RestauranteRepository;
+import com.example.encuentro2.repository.RestauranteMongoRepository;
+import com.example.encuentro2.repository.RestauranteRedisRepository;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,11 +25,15 @@ import static org.springframework.data.mongodb.core.query.Criteria.where;
 @Service
 @RequiredArgsConstructor
 public class RestauranteService {
+
     @Autowired
-    private MongoTemplate mongoTemplate;
+    MongoTemplate mongoTemplate;
+
     private final ObjectMapper mapper;
     @Autowired
-    private RestauranteRepository restauranteRepository;
+    private RestauranteRedisRepository restauranteRedisRepository;
+    @Autowired
+    private RestauranteMongoRepository restauranteMongoRepository;
 
     private static final Logger logger = LoggerFactory.getLogger(RestauranteService.class);
 
@@ -62,8 +67,8 @@ public class RestauranteService {
             String restauranteString = mappearAString(restaurante);
             mappearAClase(restauranteString);
             mappearAMap(restauranteString);
-            Restaurante restauranteNuevo =  mongoTemplate.save(restaurante, "restaurantes");
-            restauranteRepository.save(mappearAString(restauranteNuevo), restauranteNuevo.getId());
+            Restaurante restauranteNuevo =  restauranteMongoRepository.save(restaurante, "restaurantes");
+            restauranteRedisRepository.save(mappearAString(restauranteNuevo), restauranteNuevo.getId());
             return restauranteNuevo;
         } catch (JsonProcessingException e) {
             logger.error("Error convirtiendo a string", e);
@@ -78,12 +83,12 @@ public class RestauranteService {
    public  Restaurante getRestauranteById(String id) throws JsonProcessingException, RecursoNoExistente {
         try {
             logger.info("Con redis");
-            return mappearAClase(restauranteRepository.findById(id));
+            return mappearAClase(restauranteRedisRepository.findById(id));
         }catch (IllegalArgumentException e){
-            Restaurante restaurante = mongoTemplate.findById(id, Restaurante.class);
+            Restaurante restaurante = restauranteMongoRepository.findById(id);
             try{
                 logger.info("Con mongo");
-                restauranteRepository.save(mappearAString(restaurante), restaurante.getId());
+                restauranteRedisRepository.save(mappearAString(restaurante), restaurante.getId());
                 return restaurante;
             }catch(NullPointerException e2){
                 throw new RecursoNoExistente("No se ha encontrado un restaurante con ese id");
@@ -96,8 +101,8 @@ public class RestauranteService {
         try {
             String restauranteString = mappearAString(restaurante);
             logger.info(restauranteString);
-            Restaurante restauranteActualizado = mongoTemplate.save(restaurante);
-            restauranteRepository.save(mappearAString(restauranteActualizado), restauranteActualizado.getId());
+            Restaurante restauranteActualizado = restauranteMongoRepository.save(restaurante, "restaurantes");
+            restauranteRedisRepository.save(mappearAString(restauranteActualizado), restauranteActualizado.getId());
             return restauranteActualizado;
         } catch (JsonProcessingException e) {
             logger.error("Error convirtiendo a string", e);
@@ -107,9 +112,9 @@ public class RestauranteService {
 
     public void deleteByName(String nombre) throws RecursoNoExistente {
         try {
-            Restaurante restaurante = mongoTemplate.findOne((new Query(where("nombre").is(nombre))), Restaurante.class);
-            mongoTemplate.findAndRemove((new Query(where("nombre").is(restaurante.getNombre()))), Restaurante.class);
-            restauranteRepository.delete(restaurante.getId());
+            Restaurante restaurante = restauranteMongoRepository.findOne((new Query(where("nombre").is(nombre))));
+            restauranteMongoRepository.findAndRemove((new Query(where("nombre").is(restaurante.getNombre()))));
+            restauranteRedisRepository.delete(restaurante.getId());
         }catch(NullPointerException n){
             throw new RecursoNoExistente("No se ha encontrado un restaurante con ese nombre");
         }

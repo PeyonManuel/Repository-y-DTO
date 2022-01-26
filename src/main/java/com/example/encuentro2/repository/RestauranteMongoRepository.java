@@ -1,18 +1,32 @@
 package com.example.encuentro2.repository;
 
 import com.example.encuentro2.model.Restaurante;
-import org.springframework.data.domain.Example;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
+@Repository
+@RequiredArgsConstructor
+public class RestauranteMongoRepository {
 
-public interface RestauranteRepository extends MongoRepository {
+    @Autowired
+    private MongoTemplate mongoTemplate;
 
-    public Restaurante save(Restaurante restaurante);
+    public Restaurante save(Restaurante restaurante, String collection){
+        return mongoTemplate.save(restaurante, collection);
+    }
 
-    public Restaurante findById(String id);
+    public Restaurante findById(String id){
+        return mongoTemplate.findById(id, Restaurante.class);
+    }
 
-    public void deleteById(String id);
+    public void findAndRemove(Query query){
+        mongoTemplate.findOne(query, Restaurante.class);
+    }
 
-    public Restaurante findOne(Example example)
+    public Restaurante findOne(Query query) {
+        return mongoTemplate.findOne(query, Restaurante.class);
+    }
 }
