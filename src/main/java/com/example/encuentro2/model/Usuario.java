@@ -8,6 +8,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.io.Serializable;
+import java.text.DateFormat;
 import java.util.Date;
 
 
@@ -15,14 +16,18 @@ import java.util.Date;
 @Setter
 @ToString
 @Document("restaurantes")
-public class Restaurante implements Serializable {
+public class Usuario implements Serializable {
     @Id
     private String id;
     private String nombre;
-    private Ciudad ciudad;
-    private Menu menuComida;
-    private Menu menuBebidas;
-    private String hora_inicio;
-    private String hora_fin;
-    private Date fecha_creacion;
+    private String type;
+    private Date fechaCreacion;
+    private Date fechaModificacion;
+
+    public Usuario(String nombre, String type) {
+        this.nombre = nombre;
+        this.type = type;
+        this.fechaCreacion = new Date();
+        this.fechaModificacion = new Date();
+    }
 }

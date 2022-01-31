@@ -1,6 +1,6 @@
 package com.example.encuentro2.repository;
 
-import com.example.encuentro2.model.Restaurante;
+import com.example.encuentro2.model.Usuario;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,23 +12,23 @@ import redis.clients.jedis.exceptions.JedisConnectionException;
 import java.util.List;
 
 @Repository
-public class RestauranteRedisRepository {
+public class UsuarioRedisRepository {
     public static final String RESTAURANTE_KEY = "RESTAURANTE";
 
-    private static final Logger logger = LoggerFactory.getLogger(RestauranteRedisRepository.class);
+    private static final Logger logger = LoggerFactory.getLogger(UsuarioRedisRepository.class);
 
 
     private HashOperations<String, String, String> hashOperations;
     @Autowired
     private RedisTemplate redisTemplate;
 
-    public RestauranteRedisRepository(RedisTemplate redisTemplate){
+    public UsuarioRedisRepository(RedisTemplate redisTemplate){
         this.redisTemplate = redisTemplate;
         this.hashOperations = this.redisTemplate.opsForHash();
     }
 
-    public void save(String restaurante, String id) {
-        hashOperations.put(RESTAURANTE_KEY, id, restaurante);
+    public void save(String usuario, String id) {
+        hashOperations.put(RESTAURANTE_KEY, id, usuario);
     }
 
     public List findAll(){
@@ -44,8 +44,8 @@ public class RestauranteRedisRepository {
         }
     }
 
-    public void update(Restaurante restaurante) {
-        //save(restaurante);
+    public void update(Usuario usuario) {
+        //save(usuario);
     }
 
     public void delete(String id) {
