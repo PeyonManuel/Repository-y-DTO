@@ -13,7 +13,7 @@ import java.util.List;
 
 @Repository
 public class UsuarioRedisRepository {
-    public static final String RESTAURANTE_KEY = "RESTAURANTE";
+    public static final String RESTAURANTE_KEY = "USUARIOS";
 
     private static final Logger logger = LoggerFactory.getLogger(UsuarioRedisRepository.class);
 

@@ -14,6 +14,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import javax.servlet.http.HttpSession;
 import java.util.Map;
 
 @RestController
@@ -32,8 +33,9 @@ public class UsuarioController {
 
 
     @GetMapping(path = "/usuario/{id}")
-    private Usuario getUsuarioById(@PathVariable String id) throws ResponseStatusException, JsonProcessingException, RecursoNoExistente {
+    private Usuario getUsuarioById(@PathVariable String id, HttpSession session) throws ResponseStatusException, JsonProcessingException, RecursoNoExistente {
             try {
+                session.setAttribute("test", "prueba");
                 return usuarioService.getUsuarioById(id);
             }catch(RecursoNoExistente recursoNoExistente){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, recursoNoExistente.getMessage());
